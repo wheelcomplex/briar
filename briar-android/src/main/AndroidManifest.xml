@@ -110,7 +110,7 @@
 			android:label="@string/app_name"
 			android:theme="@style/BriarTheme.NoActionBar"
 			android:parentActivityName="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
-			android:windowSoftInputMode="stateHidden|adjustResize">
+			android:windowSoftInputMode="stateUnchanged|adjustResize">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
@@ -142,7 +142,7 @@
 			android:label="@string/app_name"
 			android:parentActivityName="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
 			android:theme="@style/BriarTheme.NoActionBar"
-			android:windowSoftInputMode="adjustResize|stateHidden">
+			android:windowSoftInputMode="adjustResize|stateUnchanged">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
@@ -226,7 +226,7 @@
 			android:label="@string/app_name"
 			android:parentActivityName="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
 			android:theme="@style/BriarTheme.NoActionBar"
-			android:windowSoftInputMode="adjustResize|stateHidden">
+			android:windowSoftInputMode="adjustResize|stateUnchanged">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
@@ -299,7 +299,7 @@
 			android:name="org.briarproject.briar.android.blog.ReblogActivity"
 			android:label="@string/blogs_reblog_button"
 			android:parentActivityName="org.briarproject.briar.android.blog.BlogActivity"
-			android:windowSoftInputMode="stateHidden">
+			android:windowSoftInputMode="stateUnchanged">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="org.briarproject.briar.android.blog.BlogActivity"

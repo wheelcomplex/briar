@@ -275,7 +275,7 @@ public class ConversationActivity extends BriarActivity
 		textInputView.setSendController(sendController);
 		textInputView.setMaxTextLength(MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		textInputView.setEnabled(false);
-		textInputView.addOnKeyboardShownListener(this::scrollToBottom);
+		textInputView.setOnKeyboardShownListener(this::scrollToBottom);
 	}
 
 	private void scrollToBottom() {
