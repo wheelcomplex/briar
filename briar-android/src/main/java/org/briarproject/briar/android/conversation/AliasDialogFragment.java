@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatDialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -17,6 +18,9 @@ import org.briarproject.briar.android.activity.BriarActivity;
 
 import javax.inject.Inject;
 
+import static android.support.v4.content.ContextCompat.getSystemService;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
+import static android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT;
 import static java.util.Objects.requireNonNull;
 
 public class AliasDialogFragment extends AppCompatDialogFragment {
@@ -67,6 +71,18 @@ public class AliasDialogFragment extends AppCompatDialogFragment {
 		cancelButton.setOnClickListener(v1 -> getDialog().cancel());
 
 		return v;
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		if (aliasEditText.requestFocus()) {
+			requireNonNull(getDialog().getWindow())
+					.setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+			InputMethodManager imm = requireNonNull(getSystemService(
+					requireContext(), InputMethodManager.class));
+			imm.showSoftInput(aliasEditText, SHOW_IMPLICIT);
+		}
 	}
 
 }

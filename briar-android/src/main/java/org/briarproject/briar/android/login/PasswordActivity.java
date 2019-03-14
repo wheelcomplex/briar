@@ -100,6 +100,7 @@ public class PasswordActivity extends BaseActivity {
 		} else {
 			notificationManager.blockSignInNotification();
 			notificationManager.clearSignInNotification();
+			if (password.requestFocus()) showSoftKeyboard(password);
 		}
 	}
 

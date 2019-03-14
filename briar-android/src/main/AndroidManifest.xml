@@ -130,7 +130,7 @@
 			android:name="org.briarproject.briar.android.privategroup.creation.CreateGroupActivity"
 			android:label="@string/groups_create_group_title"
 			android:parentActivityName="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
-			android:windowSoftInputMode="adjustResize">
+			android:windowSoftInputMode="stateVisible|adjustResize">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
@@ -214,7 +214,7 @@
 			android:name="org.briarproject.briar.android.forum.CreateForumActivity"
 			android:label="@string/create_forum_title"
 			android:parentActivityName="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
-			android:windowSoftInputMode="adjustResize">
+			android:windowSoftInputMode="stateVisible|adjustResize">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="org.briarproject.briar.android.navdrawer.NavDrawerActivity"
