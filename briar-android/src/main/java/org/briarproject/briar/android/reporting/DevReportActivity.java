@@ -12,7 +12,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -43,7 +42,6 @@ import static android.view.View.GONE;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
-import static android.view.inputmethod.InputMethodManager.SHOW_FORCED;
 import static java.util.logging.Level.WARNING;
 import static org.acra.ACRAConstants.EXTRA_REPORT_FILE;
 import static org.acra.ReportField.ANDROID_VERSION;
@@ -53,6 +51,7 @@ import static org.acra.ReportField.PACKAGE_NAME;
 import static org.acra.ReportField.REPORT_ID;
 import static org.acra.ReportField.STACK_TRACE;
 import static org.briarproject.briar.android.TestingConstants.PREVENT_SCREENSHOTS;
+import static org.briarproject.briar.android.util.UiUtils.showSoftKeyboard;
 
 public class DevReportActivity extends BaseCrashReportDialog
 		implements CompoundButton.OnCheckedChangeListener {
@@ -151,8 +150,7 @@ public class DevReportActivity extends BaseCrashReportDialog
 			reviewing = true;
 			reportForm.setVisibility(VISIBLE);
 			requestReport.setVisibility(INVISIBLE);
-			((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
-					.showSoftInput(userCommentView, SHOW_FORCED);
+			showSoftKeyboard(this, userCommentView);
 		});
 		findViewById(R.id.declineButton).setOnClickListener(v -> closeReport());
 		chevron.setOnClickListener(v -> {

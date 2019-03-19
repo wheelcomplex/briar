@@ -1,13 +1,11 @@
 package org.briarproject.briar.android.login;
 
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ProgressBar;
 
@@ -19,12 +17,12 @@ import org.briarproject.briar.android.util.UiUtils;
 
 import javax.annotation.Nullable;
 
-import static android.content.Context.INPUT_METHOD_SERVICE;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.view.inputmethod.EditorInfo.IME_ACTION_DONE;
 import static java.util.Objects.requireNonNull;
 import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
+import static org.briarproject.briar.android.util.UiUtils.hideSoftKeyboard;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -114,9 +112,7 @@ public class PasswordFragment extends SetupFragment {
 
 	@Override
 	public void onClick(View view) {
-		IBinder token = passwordEntry.getWindowToken();
-		Object o = getContext().getSystemService(INPUT_METHOD_SERVICE);
-		((InputMethodManager) o).hideSoftInputFromWindow(token, 0);
+		hideSoftKeyboard(requireContext(), passwordEntry);
 		setupController.setPassword(passwordEntry.getText().toString());
 		if (setupController.needToShowDozeFragment()) {
 			setupController.showDozeFragment();
