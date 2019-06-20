@@ -37,7 +37,6 @@ import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.NoSuchContactException;
-import org.briarproject.bramble.api.db.NoSuchMessageException;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
@@ -78,7 +77,6 @@ import org.briarproject.briar.api.conversation.ConversationResponse;
 import org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent;
 import org.briarproject.briar.api.forum.ForumSharingManager;
 import org.briarproject.briar.api.introduction.IntroductionManager;
-import org.briarproject.briar.api.messaging.Attachment;
 import org.briarproject.briar.api.messaging.AttachmentHeader;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -108,8 +106,6 @@ import static android.support.v4.view.ViewCompat.setTransitionName;
 import static android.support.v7.util.SortedList.INVALID_POSITION;
 import static android.view.Gravity.RIGHT;
 import static android.widget.Toast.LENGTH_SHORT;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.Collections.sort;
 import static java.util.Objects.requireNonNull;
 import static java.util.logging.Level.INFO;
@@ -121,9 +117,11 @@ import static org.briarproject.bramble.util.LogUtils.now;
 import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 import static org.briarproject.briar.android.activity.RequestCodes.REQUEST_ATTACH_IMAGE;
 import static org.briarproject.briar.android.activity.RequestCodes.REQUEST_INTRODUCTION;
+import static org.briarproject.briar.android.attachment.AttachmentItem.State.LOADING;
 import static org.briarproject.briar.android.conversation.ImageActivity.ATTACHMENTS;
 import static org.briarproject.briar.android.conversation.ImageActivity.ATTACHMENT_POSITION;
 import static org.briarproject.briar.android.conversation.ImageActivity.DATE;
+import static org.briarproject.briar.android.conversation.ImageActivity.ITEM_ID;
 import static org.briarproject.briar.android.conversation.ImageActivity.NAME;
 import static org.briarproject.briar.android.util.UiUtils.getAvatarTransitionName;
 import static org.briarproject.briar.android.util.UiUtils.getBulbTransitionName;
@@ -175,8 +173,6 @@ public class ConversationActivity extends BriarActivity
 	volatile GroupInvitationManager groupInvitationManager;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
-	private final Map<MessageId, PrivateMessageHeader> missingAttachments =
-			new ConcurrentHashMap<>();
 	private final Observer<String> contactNameObserver = name -> {
 		requireNonNull(name);
 		loadMessages();
@@ -251,6 +247,7 @@ public class ConversationActivity extends BriarActivity
 		adapter = new ConversationAdapter(this, this);
 		list = findViewById(R.id.conversationView);
 		layoutManager = new LinearLayoutManager(this);
+		layoutManager.setStackFromEnd(true);
 		list.setLayoutManager(layoutManager);
 		list.setAdapter(adapter);
 		list.setEmptyText(getString(R.string.no_private_messages));
@@ -440,6 +437,7 @@ public class ConversationActivity extends BriarActivity
 		});
 	}
 
+	@DatabaseExecutor
 	private void eagerlyLoadMessageSize(PrivateMessageHeader h) {
 		try {
 			MessageId id = h.getId();
@@ -456,21 +454,11 @@ public class ConversationActivity extends BriarActivity
 			// images we use a grid so the size is fixed
 			List<AttachmentHeader> headers = h.getAttachmentHeaders();
 			if (headers.size() == 1) {
-				List<AttachmentItem> items = attachmentRetriever.cacheGet(id);
-				if (items == null) {
-					LOG.info("Eagerly loading image size for latest message");
-					AttachmentHeader header = headers.get(0);
-					try {
-						Attachment a = attachmentRetriever
-								.getMessageAttachment(header);
-						AttachmentItem item =
-								attachmentRetriever.getAttachmentItem(a, true);
-						attachmentRetriever.cachePut(id, singletonList(item));
-					} catch (NoSuchMessageException e) {
-						LOG.info("Attachment not received yet");
-						missingAttachments.put(header.getMessageId(), h);
-					}
-				}
+				LOG.info("Eagerly loading image size for latest message");
+				AttachmentHeader header = headers.get(0);
+				// TODO does this work, is it even needed?
+				// just getting the item caches its size
+				attachmentRetriever.cacheAttachmentItem(header, h.getId());
 			}
 		} catch (DbException e) {
 			logException(LOG, WARNING, e);
@@ -551,44 +539,34 @@ public class ConversationActivity extends BriarActivity
 				&& adapter.isScrolledToBottom(layoutManager);
 	}
 
-	private void loadMessageAttachments(PrivateMessageHeader h) {
-		// TODO: Use placeholders for missing/invalid attachments
+	private void loadMessageAttachments(List<AttachmentItem> items) {
 		runOnDbThread(() -> {
-			try {
-				// TODO move getting the items off to IoExecutor, if size == 1
-				List<AttachmentHeader> headers = h.getAttachmentHeaders();
-				boolean needsSize = headers.size() == 1;
-				List<AttachmentItem> items = new ArrayList<>(headers.size());
-				for (AttachmentHeader header : headers) {
-					try {
-						Attachment a = attachmentRetriever
-								.getMessageAttachment(header);
-						AttachmentItem item = attachmentRetriever
-								.getAttachmentItem(a, needsSize);
-						items.add(item);
-					} catch (NoSuchMessageException e) {
-						LOG.info("Attachment not received yet");
-						missingAttachments.put(header.getMessageId(), h);
-						return;
-					}
-				}
-				// Don't cache items unless all are present and valid
-				attachmentRetriever.cachePut(h.getId(), items);
-				displayMessageAttachments(h.getId(), items);
-			} catch (DbException e) {
-				logException(LOG, WARNING, e);
+			for (AttachmentItem item : items) {
+				if (item.getState() == LOADING)
+					loadMessageAttachment(item.getMessageId());
 			}
 		});
 	}
 
-	private void displayMessageAttachments(MessageId m,
-			List<AttachmentItem> items) {
+	@DatabaseExecutor
+	private void loadMessageAttachment(MessageId attachmentId) {
+		try {
+			Pair<MessageId, AttachmentItem> pair =
+					attachmentRetriever.loadAttachmentItem(attachmentId);
+			MessageId conversationMessageId = pair.getFirst();
+			AttachmentItem item = pair.getSecond();
+			updateMessageAttachment(conversationMessageId, item);
+		} catch (DbException e) {
+			logException(LOG, WARNING, e);
+		}
+	}
+
+	private void updateMessageAttachment(MessageId m, AttachmentItem item) {
 		runOnUiThreadUnlessDestroyed(() -> {
 			Pair<Integer, ConversationMessageItem> pair =
 					adapter.getMessageItem(m);
-			if (pair != null) {
+			if (pair != null && pair.getSecond().updateAttachments(item)) {
 				boolean scroll = shouldScrollWhenUpdatingMessage();
-				pair.getSecond().setAttachments(items);
 				adapter.notifyItemChanged(pair.getFirst());
 				if (scroll) scrollToBottom();
 			}
@@ -656,11 +634,7 @@ public class ConversationActivity extends BriarActivity
 
 	@UiThread
 	private void onAttachmentReceived(MessageId attachmentId) {
-		PrivateMessageHeader h = missingAttachments.remove(attachmentId);
-		if (h != null) {
-			LOG.info("Missing attachment received");
-			loadMessageAttachments(h);
-		}
+		runOnDbThread(() -> loadMessageAttachment(attachmentId));
 	}
 
 	@UiThread
@@ -908,8 +882,9 @@ public class ConversationActivity extends BriarActivity
 		i.putExtra(ATTACHMENT_POSITION, attachments.indexOf(item));
 		i.putExtra(NAME, name);
 		i.putExtra(DATE, messageItem.getTime());
+		i.putExtra(ITEM_ID, messageItem.getId().getBytes());
 		// restoring list position should not trigger android bug #224270
-		String transitionName = item.getTransitionName();
+		String transitionName = item.getTransitionName(messageItem.getId());
 		ActivityOptionsCompat options =
 				makeSceneTransitionAnimation(this, view, transitionName);
 		ActivityCompat.startActivity(this, i, options.toBundle());
@@ -950,13 +925,10 @@ public class ConversationActivity extends BriarActivity
 
 	@Override
 	public List<AttachmentItem> getAttachmentItems(PrivateMessageHeader h) {
-		List<AttachmentItem> attachments =
-				attachmentRetriever.cacheGet(h.getId());
-		if (attachments == null) {
-			loadMessageAttachments(h);
-			return emptyList();
-		}
-		return attachments;
+		List<AttachmentItem> items =
+				attachmentRetriever.getAttachmentItems(h);
+		loadMessageAttachments(items);
+		return items;
 	}
 
 }

@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import org.briarproject.bramble.api.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.bramble.api.nullsafety.ParametersNotNullByDefault;
+import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.briar.R;
 import org.briarproject.briar.android.activity.ActivityComponent;
 import org.briarproject.briar.android.activity.BriarActivity;
@@ -67,6 +68,7 @@ public class ImageActivity extends BriarActivity
 	final static String ATTACHMENT_POSITION = "position";
 	final static String NAME = "name";
 	final static String DATE = "date";
+	final static String ITEM_ID = "itemId";
 
 	@RequiresApi(api = 16)
 	private final static int UI_FLAGS_DEFAULT =
@@ -80,6 +82,7 @@ public class ImageActivity extends BriarActivity
 	private AppBarLayout appBarLayout;
 	private ViewPager viewPager;
 	private List<AttachmentItem> attachments;
+	private MessageId conversationMessageId;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -134,6 +137,7 @@ public class ImageActivity extends BriarActivity
 		String date = formatDateAbsolute(this, time);
 		contactName.setText(name);
 		dateView.setText(date);
+		conversationMessageId = new MessageId(i.getByteArrayExtra(ITEM_ID));
 
 		// Set up image ViewPager
 		viewPager = findViewById(R.id.viewPager);
@@ -330,8 +334,8 @@ public class ImageActivity extends BriarActivity
 
 		@Override
 		public Fragment getItem(int position) {
-			Fragment f = ImageFragment
-					.newInstance(attachments.get(position), isFirst);
+			Fragment f = ImageFragment.newInstance(
+					attachments.get(position), conversationMessageId, isFirst);
 			isFirst = false;
 			return f;
 		}

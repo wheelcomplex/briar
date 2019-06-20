@@ -1,6 +1,7 @@
 package org.briarproject.briar.android.conversation;
 
 import android.support.annotation.LayoutRes;
+import android.support.annotation.UiThread;
 
 import org.briarproject.bramble.api.nullsafety.NotNullByDefault;
 import org.briarproject.briar.android.attachment.AttachmentItem;
@@ -14,7 +15,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotNullByDefault
 class ConversationMessageItem extends ConversationItem {
 
-	private List<AttachmentItem> attachments;
+	private final List<AttachmentItem> attachments;
 
 	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
 			List<AttachmentItem> attachments) {
@@ -26,8 +27,14 @@ class ConversationMessageItem extends ConversationItem {
 		return attachments;
 	}
 
-	void setAttachments(List<AttachmentItem> attachments) {
-		this.attachments = attachments;
+	@UiThread
+	boolean updateAttachments(AttachmentItem item) {
+		int pos = attachments.indexOf(item);
+		if (pos != -1 && attachments.get(pos).getState() != item.getState()) {
+			attachments.set(pos, item);
+			return true;
+		}
+		return false;
 	}
 
 }

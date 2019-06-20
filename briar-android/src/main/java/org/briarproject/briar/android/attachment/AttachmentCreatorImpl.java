@@ -33,6 +33,7 @@ import javax.inject.Inject;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.LogUtils.logException;
+import static org.briarproject.briar.android.attachment.AttachmentItem.State.ERROR;
 import static org.briarproject.briar.android.util.UiUtils.observeForeverOnce;
 import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_IMAGE_SIZE;
 
@@ -108,8 +109,8 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		// get and cache AttachmentItem for ImagePreview
 		try {
 			Attachment a = retriever.getMessageAttachment(h);
-			AttachmentItem item = retriever.getAttachmentItem(a, needsSize);
-			if (item.hasError()) throw new IOException();
+			AttachmentItem item = retriever.createAttachmentItem(a, needsSize);
+			if (item.getState() == ERROR) throw new IOException();
 			AttachmentItemResult itemResult =
 					new AttachmentItemResult(uri, item);
 			itemResults.add(itemResult);
@@ -166,13 +167,13 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	@Override
 	@UiThread
 	public void onAttachmentsSent(MessageId id) {
+		// TODO remove, because we don't need the actual items anymore
 		List<AttachmentItem> items = new ArrayList<>(itemResults.size());
 		for (AttachmentItemResult itemResult : itemResults) {
 			// check if we are trying to send attachment items with errors
 			if (itemResult.getItem() == null) throw new IllegalStateException();
 			items.add(itemResult.getItem());
 		}
-		retriever.cachePut(id, items);
 		resetState();
 	}
 
