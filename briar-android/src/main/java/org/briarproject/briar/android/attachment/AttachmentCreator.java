@@ -68,6 +68,8 @@ public class AttachmentCreator {
 			LiveData<GroupId> groupId, Collection<Uri> newUris) {
 		if (task != null || result != null || !uris.isEmpty())
 			throw new IllegalStateException();
+		MutableLiveData<AttachmentResult> result = new MutableLiveData<>();
+		this.result = result;
 		uris.addAll(newUris);
 		observeForeverOnce(groupId, id -> {
 			if (id == null) throw new IllegalStateException();
@@ -76,8 +78,6 @@ public class AttachmentCreator {
 					app.getContentResolver(), this, id, uris, needsSize);
 			ioExecutor.execute(() -> task.storeAttachments());
 		});
-		MutableLiveData<AttachmentResult> result = new MutableLiveData<>();
-		this.result = result;
 		return result;
 	}
 
